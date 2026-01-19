@@ -5,16 +5,16 @@
 （このリポジトリでは既に作成済みですが、再利用時のテンプレとして残しています。）
 
 ```bash
-mkdir -p meeting_scheduler/{domain,io_layer,validation,preprocessing,optimization,reporting,gui} assets/{input,output}
-touch meeting_scheduler/__init__.py \
-  meeting_scheduler/config.py \
-  meeting_scheduler/domain/{__init__.py,models.py,timegrid.py} \
-  meeting_scheduler/io_layer/{__init__.py,paths.py,xlsx_reader.py} \
-  meeting_scheduler/validation/{__init__.py,validator.py} \
-  meeting_scheduler/preprocessing/{__init__.py,preprocess.py} \
-  meeting_scheduler/optimization/{__init__.py,milp.py} \
-  meeting_scheduler/reporting/{__init__.py,report.py,export_xlsx.py} \
-  meeting_scheduler/gui/{__init__.py,app.py} \
+mkdir -p scheduler_core/{domain,io_layer,validation,preprocessing,optimization,reporting,gui} assets/{input,output}
+touch scheduler_core/__init__.py \
+  scheduler_core/config.py \
+  scheduler_core/domain/{__init__.py,models.py,timegrid.py} \
+  scheduler_core/io_layer/{__init__.py,paths.py,xlsx_reader.py} \
+  scheduler_core/validation/{__init__.py,validator.py} \
+  scheduler_core/preprocessing/{__init__.py,preprocess.py} \
+  scheduler_core/optimization/{__init__.py,milp.py} \
+  scheduler_core/reporting/{__init__.py,report.py,export_xlsx.py} \
+  scheduler_core/gui/{__init__.py,app.py} \
   main_cli.py requirements.txt
 ```
 
@@ -27,7 +27,7 @@ touch meeting_scheduler/__init__.py \
 
 ## ディレクトリ構成（概要）
 ```
-meeting_scheduler/
+scheduler_core/
   config.py           # 設定（時間スロット・重みなど）
   domain/             # エンティティ定義
   io_layer/           # スプレッドシート読み込み
@@ -79,7 +79,7 @@ python main_cli.py \
 
 ## 実行方法（GUI）
 ```bash
-streamlit run meeting_scheduler/gui/app.py
+streamlit run scheduler_core/gui/app.py
 ```
 * 入力パスは改行区切りで複数指定可能です。
 * 生成開始日時が過去の場合は即エラーで停止します。
