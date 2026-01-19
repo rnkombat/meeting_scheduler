@@ -31,6 +31,8 @@ def solve_milp(
     data: InputData,
     pre_cand: Dict[str, List[CandidateSlot]],
     fixed_sorted: Dict[str, List[FixedMeeting]],
+    can_attend: Dict[str, Dict[date, Dict[int, bool]]],
+    occupied: Dict[str, Dict[date, Dict[int, bool]]],
     cfg: AppConfig,
     grid: TimeGrid,
 ) -> SolveResult:
@@ -179,6 +181,18 @@ def solve_milp(
                         continue
                     if pid in forbidden:
                         m.addConstr(x[(tid, k, ci, pid)] == 0, name=f"conflict[{tid},{k},{ci},{pid}]")
+
+                    # 参加可否（4連続）と固定会議による占有の排除
+                    d = cand_list[ci].day
+                    s = cand_list[ci].start_slot
+                    if not can_attend.get(pid, {}).get(d, {}).get(s, False):
+                        m.addConstr(x[(tid, k, ci, pid)] == 0, name=f"unavailable[{tid},{k},{ci},{pid}]")
+                        continue
+
+                    for sl in grid.meeting_slots_covered(s, cfg.meeting_slots):
+                        if occupied.get(pid, {}).get(d, {}).get(sl, False):
+                            m.addConstr(x[(tid, k, ci, pid)] == 0, name=f"occupied[{tid},{k},{ci},{pid}]")
+                            break
 
     # (7) 二重ブッキング禁止（新規同士＋固定によるoccupiedは候補生成で排除済）
     # 人物p・日d・スロットhについて、そのスロットにかかる会議へ同時参加しない
