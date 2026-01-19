@@ -56,7 +56,7 @@ main_cli.py           # CLI実行用
 
 ### 3. 既存スケジュール（Sheets③）
 * シート名: `fixed`
-* 必須列: `team_name, meeting_date, start_time, leader_name, comm1, comm2, comm3, comm4`
+* 必須列: `team_name, meeting_date, start_time, end_time, leader_name, comm1, comm2, comm3, comm4`
 
 ### 4. 追加審議要求（Sheets④）
 * シート名: `add`
