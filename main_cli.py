@@ -1,19 +1,19 @@
-# meeting_scheduler/main_cli.py
+# scheduler_core/main_cli.py
 from __future__ import annotations
 
 import argparse
 from datetime import datetime
 from dateutil import tz
 
-from meeting_scheduler.config import DEFAULT_CONFIG
-from meeting_scheduler.domain.timegrid import TimeGrid
-from meeting_scheduler.io_layer.paths import InputPaths
-from meeting_scheduler.io_layer.xlsx_reader import XlsxReader
-from meeting_scheduler.validation.validator import validate_generation_start, validate_integrity, ValidationError
-from meeting_scheduler.preprocessing.preprocess import preprocess_all
-from meeting_scheduler.optimization.milp import solve_milp
-from meeting_scheduler.reporting.report import build_meeting_table, build_team_summary, build_person_summary
-from meeting_scheduler.reporting.export_xlsx import export_result_xlsx
+from scheduler_core.config import DEFAULT_CONFIG
+from scheduler_core.domain.timegrid import TimeGrid
+from scheduler_core.io_layer.paths import InputPaths
+from scheduler_core.io_layer.xlsx_reader import XlsxReader
+from scheduler_core.validation.validator import validate_generation_start, validate_integrity, ValidationError
+from scheduler_core.preprocessing.preprocess import preprocess_all
+from scheduler_core.optimization.milp import solve_milp
+from scheduler_core.reporting.report import build_meeting_table, build_team_summary, build_person_summary
+from scheduler_core.reporting.export_xlsx import export_result_xlsx
 
 
 def parse_args():
