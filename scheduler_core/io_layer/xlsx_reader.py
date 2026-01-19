@@ -1,4 +1,4 @@
-# meeting_scheduler/io_layer/xlsx_reader.py
+# scheduler_core/io_layer/xlsx_reader.py
 from __future__ import annotations
 
 import re
@@ -11,9 +11,9 @@ import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.utils import column_index_from_string
 
-from meeting_scheduler.domain.models import Person, Team, FixedMeeting, InputData
-from meeting_scheduler.domain.timegrid import TimeGrid
-from meeting_scheduler.config import AppConfig
+from scheduler_core.domain.models import Person, Team, FixedMeeting, InputData
+from scheduler_core.domain.timegrid import TimeGrid
+from scheduler_core.config import AppConfig
 
 
 def _infer_year_month_from_filename(path: str) -> Tuple[int, int]:

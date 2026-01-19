@@ -1,13 +1,13 @@
-# meeting_scheduler/preprocessing/preprocess.py
+# scheduler_core/preprocessing/preprocess.py
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, date, timedelta
 from typing import Dict, List, Set, Tuple
 
-from meeting_scheduler.domain.models import InputData, CandidateSlot, FixedMeeting
-from meeting_scheduler.domain.timegrid import TimeGrid
-from meeting_scheduler.config import AppConfig
+from scheduler_core.domain.models import InputData, CandidateSlot, FixedMeeting
+from scheduler_core.domain.timegrid import TimeGrid
+from scheduler_core.config import AppConfig
 
 
 @dataclass(frozen=True)

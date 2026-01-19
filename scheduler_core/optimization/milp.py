@@ -1,4 +1,4 @@
-# meeting_scheduler/optimization/milp.py
+# scheduler_core/optimization/milp.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -8,9 +8,9 @@ from typing import Dict, List, Tuple, Set, Optional
 import gurobipy as gp
 from gurobipy import GRB
 
-from meeting_scheduler.domain.models import InputData, CandidateSlot, SolveResult, SolutionMeeting, FixedMeeting
-from meeting_scheduler.domain.timegrid import TimeGrid
-from meeting_scheduler.config import AppConfig
+from scheduler_core.domain.models import InputData, CandidateSlot, SolveResult, SolutionMeeting, FixedMeeting
+from scheduler_core.domain.timegrid import TimeGrid
+from scheduler_core.config import AppConfig
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,7 @@ def solve_milp(
     - 引き継ぎ：チームごとに固定会議を時系列で k=1..Kfixed とみなし、その後の新規を接続
     - 新規会議数は「必要回数 - fixed_count」を最低限満たす（不足なら infeasible）
     """
-    m = gp.Model("meeting_scheduler")
+    m = gp.Model("scheduler_core")
     m.Params.OutputFlag = 0
     m.Params.TimeLimit = cfg.solver.time_limit_sec
     m.Params.MIPGap = cfg.solver.mip_gap
@@ -237,19 +237,8 @@ def solve_milp(
                     name=f"handover_fixed_to_new[{tid},{k}]"
                 )
             else:
-                # 新規(k-1)と新規kの共通：
-                # 「同じ候補ciを選ぶと二重になるのでOK」「異なるciでも共通>=1」が必要。
-                # 線形でやるために共通変数を入れるのが王道だが、ここは簡潔化して
-                # 「共通数の下界」を、候補ごとの組み合わせで big-M 的に制約する。
-                # 実用規模なら許容。
-                for ci_cur in range(len(cand_list)):
-                    for ci_prev in range(len(cand_list)):
-                        # (k-1,ci_prev) と (k,ci_cur) が両方選ばれたら共通>=1
-                        # Σ_p u[p] >= y_prev + y_cur -1
-                        # ただし u[p] <= x_prev[p], u[p] <= x_cur[p]
-                        # → uを毎ペアで作ると爆発するので、ここは「近似：連日会議を嫌う」だけにする手もある。
-                        # しかし仕様がハードなので、最小限のuを作る：ペアごとではなく、k単位で共通変数z[k,p]
-                        pass
+                # 新規同士の引き継ぎは後段で z 変数を使って実装する。
+                continue
 
     # 上の「新規同士の引き継ぎ」を、k単位の共通変数z[tid,k,p]で実装する（爆発回避）
     z: Dict[Tuple[str, int, str], gp.Var] = {}
@@ -322,27 +311,8 @@ def solve_milp(
     # 2) 中1日以上（近似：連日配置を嫌う）
     # チーム内で、日付が連続する候補を両方選んだらペナルティ
     # （厳密な「中1日以上」を全ペアでやると重いので、連日だけ抑える）
-    for tid, cand_list in pre_cand.items():
-        # dayごとに候補idxの集合
-        day_to_cis: Dict[date, List[int]] = {}
-        for ci, c in enumerate(cand_list):
-            day_to_cis.setdefault(c.day, []).append(ci)
-        days = sorted(day_to_cis.keys())
-        day_set = set(days)
-        for d in days:
-            d2 = d.fromordinal(d.toordinal() + 1)
-            if d2 not in day_set:
-                continue
-            cis1 = day_to_cis[d]
-            cis2 = day_to_cis[d2]
-            for k1 in range(1, Kmax_by_team[tid] + 1):
-                for k2 in range(1, Kmax_by_team[tid] + 1):
-                    gap_penalty_terms.append(
-                        gp.quicksum(y[(tid, k1, ci)] for ci in cis1) *
-                        gp.quicksum(y[(tid, k2, ci)] for ci in cis2)
-                    )
-    # ↑注意：これは二次式になるのでダメ。線形に直すため補助変数を使う。
-    # ここは実装し直す（必須）。簡潔に「その日どれか置いたか」binaryを導入して線形化する。
+    # 日本語コメント: 連日配置のペナルティは線形化が必要なので、
+    # placed_day を導入して「連日ならペナルティ」を表現する。
 
     placed_day: Dict[Tuple[str, date], gp.Var] = {}
     for tid, cand_list in pre_cand.items():
@@ -357,10 +327,11 @@ def solve_milp(
         for ci, c in enumerate(cand_list):
             day_to_cis.setdefault(c.day, []).append(ci)
         for d, cis in day_to_cis.items():
+            max_per_day = max(1, Kmax_by_team[tid])
             m.addConstr(
                 placed_day[(tid, d)] >= gp.quicksum(y[(tid, k, ci)]
                                                     for k in range(1, Kmax_by_team[tid] + 1)
-                                                    for ci in cis) / 10.0,
+                                                    for ci in cis) / float(max_per_day),
                 name=f"placed_day_lb[{tid},{d}]"
             )
             m.addConstr(

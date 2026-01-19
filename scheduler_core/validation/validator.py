@@ -1,11 +1,11 @@
-# meeting_scheduler/validation/validator.py
+# scheduler_core/validation/validator.py
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Tuple, Dict
 
-from meeting_scheduler.domain.models import InputData
+from scheduler_core.domain.models import InputData
 
 
 @dataclass(frozen=True)

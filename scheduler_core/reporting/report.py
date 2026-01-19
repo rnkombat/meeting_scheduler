@@ -1,4 +1,4 @@
-# meeting_scheduler/reporting/report.py
+# scheduler_core/reporting/report.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,9 +7,9 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 
-from meeting_scheduler.domain.models import InputData, SolveResult, SolutionMeeting, FixedMeeting
-from meeting_scheduler.domain.timegrid import TimeGrid
-from meeting_scheduler.config import AppConfig
+from scheduler_core.domain.models import InputData, SolveResult, SolutionMeeting, FixedMeeting
+from scheduler_core.domain.timegrid import TimeGrid
+from scheduler_core.config import AppConfig
 
 
 def _pid_to_name(data: InputData, pid: str) -> str:

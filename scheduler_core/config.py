@@ -1,4 +1,4 @@
-# meeting_scheduler/config.py
+# scheduler_core/config.py
 from dataclasses import dataclass
 from typing import Dict
 

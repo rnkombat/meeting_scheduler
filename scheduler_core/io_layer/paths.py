@@ -1,4 +1,4 @@
-# meeting_scheduler/io_layer/paths.py
+# scheduler_core/io_layer/paths.py
 from dataclasses import dataclass
 from typing import List, Optional
 

@@ -1,4 +1,4 @@
-# meeting_scheduler/domain/timegrid.py
+# scheduler_core/domain/timegrid.py
 from __future__ import annotations
 
 from dataclasses import dataclass

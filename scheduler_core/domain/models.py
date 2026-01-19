@@ -1,4 +1,4 @@
-# meeting_scheduler/domain/models.py
+# scheduler_core/domain/models.py
 from __future__ import annotations
 
 from dataclasses import dataclass

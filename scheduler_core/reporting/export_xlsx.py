@@ -1,4 +1,4 @@
-# meeting_scheduler/reporting/export_xlsx.py
+# scheduler_core/reporting/export_xlsx.py
 from __future__ import annotations
 
 from pathlib import Path
