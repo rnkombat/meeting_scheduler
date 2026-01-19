@@ -145,7 +145,12 @@ class XlsxReader:
                     merged[pid][d] = slots
         return merged
 
-    def read_teams(self, teams_file: str, sheet_name: str) -> List[Team]:
+    def read_teams(
+        self,
+        teams_file: str,
+        sheet_name: str,
+        name_to_pid: Dict[str, str],
+    ) -> List[Team]:
         """
         teamsシート想定列（ヘッダあり）:
         tid, name, leader_pid, leader_name, member_pids, member_names, deadline, base_required
@@ -162,10 +167,34 @@ class XlsxReader:
             tid = str(row["tid"]).strip()
             name = str(row["name"]).strip()
             leader_pid = str(row["leader_pid"]).strip()
+            leader_name = str(row["leader_name"]).strip() if "leader_name" in df.columns and pd.notna(row.get("leader_name")) else ""
+            if leader_name:
+                if leader_name not in name_to_pid:
+                    raise ValueError(f"登山隊 {name} のリーダー名が人物マスタにありません: {leader_name}")
+                if name_to_pid[leader_name] != leader_pid:
+                    raise ValueError(f"登山隊 {name} のleader_pidとleader_nameが一致しません。")
 
             mems: Set[str] = set()
             if "member_pids" in df.columns and pd.notna(row.get("member_pids")):
                 mems = {x.strip() for x in str(row["member_pids"]).split(",") if x.strip()}
+            elif "member_names" in df.columns and pd.notna(row.get("member_names")):
+                # 日本語コメント: IDが無い場合は名称からPIDを引く（運用都合での補完）
+                mems = set()
+                for nm in str(row["member_names"]).split(","):
+                    nm = nm.strip()
+                    if not nm:
+                        continue
+                    if nm not in name_to_pid:
+                        raise ValueError(f"登山隊 {name} のメンバー名が人物マスタにありません: {nm}")
+                    mems.add(name_to_pid[nm])
+
+            if "member_names" in df.columns and pd.notna(row.get("member_names")) and mems:
+                member_names = [x.strip() for x in str(row["member_names"]).split(",") if x.strip()]
+                for nm in member_names:
+                    if nm not in name_to_pid:
+                        raise ValueError(f"登山隊 {name} のメンバー名が人物マスタにありません: {nm}")
+                    if name_to_pid[nm] not in mems:
+                        raise ValueError(f"登山隊 {name} のmember_pidsとmember_namesが一致しません。")
 
             deadline = pd.to_datetime(row["deadline"]).date()
             base_required = int(row["base_required"])
@@ -212,7 +241,7 @@ class XlsxReader:
         """
         df = pd.read_excel(file_path, sheet_name=sheet_name)
 
-        need = ["team_name", "meeting_date", "start_time", "leader_name", "comm1", "comm2", "comm3", "comm4"]
+        need = ["team_name", "meeting_date", "start_time", "end_time", "leader_name", "comm1", "comm2", "comm3", "comm4"]
         for c in need:
             if c not in df.columns:
                 raise ValueError(f"{file_path}:{sheet_name} に列 {c} がありません。")
@@ -227,10 +256,16 @@ class XlsxReader:
             d = pd.to_datetime(row["meeting_date"]).date()
 
             st = str(row["start_time"]).strip()
+            et = str(row["end_time"]).strip()
             # start_timeは "09:00" 等を想定
             hh, mm = st.split(":")
             start_minutes = int(hh) * 60 + int(mm)
             slot = (start_minutes - grid.day_start_hour * 60) // 30
+            if slot < 0 or slot > self.cfg.latest_start_slot:
+                raise ValueError(f"固定会議の開始時刻が範囲外です: {tname} {d} {st}")
+            expected_end = grid.meeting_end_time(int(slot), self.cfg.meeting_slots).strftime("%H:%M")
+            if et and et != expected_end:
+                raise ValueError(f"固定会議の終了時刻が2時間固定と一致しません: {tname} {d} {st}-{et}")
 
             leader_name = str(row["leader_name"]).strip()
             if leader_name not in name_to_pid:
@@ -279,7 +314,7 @@ class XlsxReader:
         avail = self.merge_availability(monthly_avails)
 
         # 登山隊
-        teams_list = self.read_teams(teams_file, teams_sheet)
+        teams_list = self.read_teams(teams_file, teams_sheet, name_to_pid)
         teams = {t.tid: t for t in teams_list}
         team_name_to_tid = {t.name: t.tid for t in teams_list}
 
@@ -305,6 +340,11 @@ class XlsxReader:
             fixed_meetings.extend(self.read_fixed_like_meetings(fp, sh, team_name_to_tid, name_to_pid, self.grid))
         for fp, sh in prev_result_files:
             fixed_meetings.extend(self.read_fixed_like_meetings(fp, sh, team_name_to_tid, name_to_pid, self.grid))
+
+        # 日本語コメント: 追加審議がある場合は過去結果の読み込みを必須にする
+        has_additional = any(t.add_required > 0 for t in teams2.values())
+        if has_additional and not prev_result_files:
+            raise ValueError("追加審議があるため、過去結果（resultシート）の入力が必要です。")
 
         return InputData(
             persons=persons,

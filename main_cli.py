@@ -82,6 +82,8 @@ def main():
         data=data,
         pre_cand=pre.candidates_by_team,
         fixed_sorted=pre.fixed_by_team_sorted,
+        can_attend=pre.can_attend,
+        occupied=pre.occupied,
         cfg=cfg,
         grid=grid
     )
